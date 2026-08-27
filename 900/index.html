@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Jailbreak Amine PS4 • 9.00</title><link rel="stylesheet" href="../theme.css"></head><body><main class="container"><section class="header-section"><h1 class="main-title">Jailbreak Amine PS4 • 9.00</h1><p id="state">PSFree + Lapse</p></section><section id="console" style="max-width:1000px;margin:0 auto;padding:24px;min-height:360px;white-space:pre-wrap;font-family:monospace"><div id="loader" aria-live="polite" style="display:flex;align-items:center;gap:12px;margin-bottom:18px;font-family:system-ui,sans-serif;">
+<span id="spinner" style="width:22px;height:22px;border:3px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;display:none;animation:spin .8s linear infinite"></span>
+<strong id="loadingText">Ready for PS4 9.00…</strong>
+</div>
+<div id="progressWrap" style="display:none;height:8px;background:rgba(255,255,255,.12);border-radius:99px;overflow:hidden;margin:8px 0 18px;">
+<div id="progressBar" style="width:0%;height:100%;transition:width .35s ease;"></div>
+</div>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style></section><div style="max-width:1000px;margin:18px auto;text-align:center"><button id="start" type="button" style="padding:12px 28px;color:white;font-size:18px">START JAILBREAK</button></div></main><script>window.log=function(msg,color){var c=document.getElementById('console');var s=document.createElement('div');s.textContent=msg;s.style.color=color||'#e9f2ff';c.appendChild(s);c.scrollTop=c.scrollHeight;};window.jailbreakSuccess=function(){document.getElementById('state').textContent='Jailbreak complete';};sessionStorage.setItem('payload_path','payload.bin');document.getElementById('start').addEventListener('click',function(){
+  var btn=this, attempt=0, maxAttempts=5, delay=1500;
+  btn.disabled=true;
+  var spin=document.getElementById('spinner'), loadingText=document.getElementById('loadingText'),
+      pw=document.getElementById('progressWrap'), pb=document.getElementById('progressBar');
+  spin.style.display='inline-block'; pw.style.display='block'; pb.style.width='5%';
+  loadingText.textContent='Loading PSFree + Lapse…';
+  window.log('Loading exploit files…','#9cf');
+  var progressTimer=setInterval(function(){
+    var v=parseInt(pb.style.width)||5;
+    if(v<88){ v+=Math.max(1,Math.round((88-v)*0.08)); pb.style.width=v+'%'; }
+  },500);
+  function finishProgress(ok){
+    clearInterval(progressTimer); pb.style.width=ok?'100%':'0%';
+    if(ok){ loadingText.textContent='Jailbreak complete'; spin.style.display='none'; }
+    else { loadingText.textContent='Ready to retry'; spin.style.display='none'; }
+  }
+  function run(){
+    attempt++;
+    window.log('Starting PSFree + Lapse for PS4 9.00… attempt '+attempt+'/'+maxAttempts,'#9cf');
+    try{
+      if(typeof doJailBreak!=='function'){
+        throw new Error('PSFree/Lapse script not loaded.');
+      }
+      Promise.resolve(doJailBreak()).then(function(){
+        window.log('Jailbreak process completed.','#8ff0b0'); finishProgress(true);
+      }).catch(function(e){
+        window.log('PSFree error: '+e,'#ff6b8a');
+        if(attempt<maxAttempts){ window.log('Automatic retry in '+(delay/1000)+'s…','#ffd36b'); setTimeout(run,delay); }
+        else { btn.disabled=false; finishProgress(false); window.log('Retries exhausted. Press START to try again.','#ff6b8a'); }
+      });
+    }catch(e){
+      window.log('PSFree error: '+e,'#ff6b8a');
+      if(attempt<maxAttempts){ window.log('Automatic retry in '+(delay/1000)+'s…','#ffd36b'); setTimeout(run,delay); }
+      else { btn.disabled=false; finishProgress(false); window.log('Retries exhausted. Press START to try again.','#ff6b8a'); }
+    }
+  }
+  run();
+});</script><script src="psfree-lapse/bundle.js"></script><script>
+
+/* Firmware Auto Start dispatcher */
+(function () {
+  "use strict";
+  function fw() {
+    var t = (document.body && document.body.innerText) || "";
+    var m = t.match(/(9\.00|9\.03|9\.04|9\.50|9\.60|10\.00|10\.01|10\.50|10\.70|10\.71|11\.00|11\.02|11\.50|11\.51|11\.52|11\.60|11\.70|11\.80|12\.00|12\.50|12\.70|12\.71|12\.72|13\.00)/);
+    return m ? m[1] : null;
+  }
+  function start() {
+    var selectors = [
+      "#startJailbreak","#start-jailbreak","#start","#jeilbrek",
+      "[data-action='jailbreak']",
+      "button[id*='start' i][id*='jailbreak' i]",
+      "a[id*='start' i][id*='jailbreak' i]"
+    ];
+    for (var i=0;i<selectors.length;i++) {
+      var e=document.querySelector(selectors[i]);
+      if(e && !e.disabled){ try{e.click(); return true;}catch(_){} }
+    }
+    return false;
+  }
+  window.FirmwareAutoStart = { firmware: fw(), start: start };
+  if(document.readyState==="loading")
+    document.addEventListener("DOMContentLoaded",function(){setTimeout(start,300);});
+  else setTimeout(start,300);
+})();
+
+</script>
+
+<style>
+#stability-panel{margin:14px auto 0;max-width:1000px;padding:14px 18px;border:1px solid rgba(255,255,255,.18);border-radius:16px;background:rgba(0,0,0,.28);backdrop-filter:blur(6px);font-family:system-ui,sans-serif;box-sizing:border-box}
+#stability-panel .sp-title{font-weight:800;font-size:16px;margin-bottom:8px}
+#stability-panel .sp-current{font-size:24px;font-weight:900;margin:2px 0 10px}
+#stability-panel .sp-note{font-size:11px;opacity:.7;margin-top:8px}
+#stability-panel select{width:100%;padding:9px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.35);color:inherit}
+</style>
+<div id="stability-panel"><div class="sp-title">مؤشر استقرار Firmware</div><div class="sp-current" id="sp-current">--%</div><select id="sp-fw"></select><div class="sp-note">النسبة تقديرية وليست نتيجة اختبار فعلي على جهاز PS4.</div></div>
+<script>
+(function(){var ratings={"9.00": 95, "9.03": 92, "9.04": 92, "9.50": 90, "9.60": 90, "10.00": 90, "10.01": 90, "10.50": 87, "10.70": 86, "10.71": 86, "11.00": 88, "11.02": 87, "11.50": 82, "11.51": 82, "11.52": 82, "11.60": 81, "11.70": 80, "11.80": 79, "12.00": 78, "12.50": 73, "12.70": 72, "12.71": 72, "12.72": 71, "13.00": 68},sel=document.getElementById('sp-fw'),cur=document.getElementById('sp-current');Object.keys(ratings).forEach(function(v){var o=document.createElement('option');o.value=v;o.textContent='PS4 '+v+' — '+ratings[v]+'%';sel.appendChild(o);});var title=(document.title.match(/(?:•|\b)\s*(\d+\.\d+)/)||[])[1];function show(v){cur.textContent=ratings[v]+'% — '+v;sel.value=v;}sel.addEventListener('change',function(){show(this.value);});show(ratings[title]?title:Object.keys(ratings)[0]);})();
+</script>
+
+
+<style>#device-stability{display:none;position:fixed;right:10px;bottom:10px;z-index:99999;padding:5px 9px;border-radius:8px;background:rgba(0,0,0,.72);border:1px solid rgba(255,255,255,.16);color:#fff;font:11px/1.25 system-ui,sans-serif;box-shadow:0 3px 14px rgba(0,0,0,.3);pointer-events:none;backdrop-filter:blur(4px)}#device-stability .ds-label{opacity:.78}#device-stability .ds-value{font-weight:800;margin-left:4px}</style>
+<div id="device-stability"><span class="ds-label">نسبة استقرار جهاز هي</span><span class="ds-value" id="device-stability-value">--%</span></div>
+<script>
+(function(){var ratings={"9.00":95,"9.03":92,"9.04":92,"9.50":90,"9.60":90,"10.00":90,"10.01":90,"10.50":87,"10.70":86,"10.71":86,"11.00":88,"11.02":87,"11.50":82,"11.51":82,"11.52":82,"11.60":81,"11.70":80,"11.80":79,"12.00":78,"12.50":73,"12.70":72,"12.71":72,"12.72":71,"13.00":68},box=document.getElementById('device-stability'),val=document.getElementById('device-stability-value'),shown=false;function fw(){var t=(document.body&&document.body.innerText)||'';var m=t.match(/(?:PS4|PlayStation 4)[^0-9]*(9\.00|9\.03|9\.04|9\.50|9\.60|10\.00|10\.01|10\.50|10\.70|10\.71|11\.00|11\.02|11\.50|11\.51|11\.52|11\.60|11\.70|11\.80|12\.00|12\.50|12\.70|12\.71|12\.72|13\.00)/);return m?m[1]:null}function show(){if(shown)return;var k=fw();if(!k){var u=navigator.userAgent.match(/PlayStation 4[\/ ]([0-9]+)\.([0-9]+)/i);if(u){var n=u[1]+'.'+u[2];k=ratings[n]?n:null}}if(!k)return;val.textContent=ratings[k]+'%';box.style.display='block';shown=true}function successText(){var t=((document.body&&document.body.innerText)||'').toLowerCase();return /jailbreak complete|jailbreak completed|achieved jailbreak|already jailbroken|jailbreak success|payload.*(loaded|running|success)|goldhen.*(loaded|success)|kpatched/.test(t)}function check(){if(successText())show()}var oldSuccess=window.jailbreakSuccess;window.jailbreakSuccess=function(){if(typeof oldSuccess==='function')try{oldSuccess.apply(this,arguments)}catch(e){}show()};setInterval(check,350);new MutationObserver(check).observe(document.body,{subtree:true,childList:true,characterData:true})})();
+</script>
+</body></html>
