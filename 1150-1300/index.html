@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" manifest="cache.appcache">
 <head>
+<script src="../smart-retry.js"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Jailbreak Amine PS4</title>
@@ -22,6 +23,7 @@
              color:#e6ebf2; vertical-align:middle; }
 </style>
   <link rel="stylesheet" href="../theme.css">
+<link rel="stylesheet" href="../unified-theme.css">
 </head>
 <body>
 <div id="wrap">
@@ -42,24 +44,33 @@
     var key = null, fwnum = null;
     var m = /PlayStation\s+4[\/ ](\d+)\.(\d+)/.exec(navigator.userAgent);
     if (m) {
-        var minor = parseInt(m[2], 16);
-        var ms = minor.toString(16);
-        if (ms.length < 2) ms = "0" + ms;
-        key = m[1] + "." + ms;
-        fwnum = parseInt(m[1], 10) * 100 + parseInt(ms, 10);
+        var major = parseInt(m[1], 10);
+        var minor = parseInt(m[2], 10);
+        if (!Number.isFinite(major) || !Number.isFinite(minor)) {
+            key = null;
+        } else {
+            var ms = String(minor).padStart(2, "0");
+            key = major + "." + ms;
+            fwnum = major * 100 + minor;
+        }
     }
     var bug = null, why = "";
-    var forced = params.get("bug");
-    if (forced === "lapse" || forced === "poops") {
-        bug = forced; why = "forced via ?bug=" + forced;
-    } else if (!key) {
+    var profiles = {
+        "11.50": { bug: "lapse", patch: "patches/1150.bin" },
+        "12.00": { bug: "lapse", patch: "patches/1200.bin" },
+        "12.02": { bug: "lapse", patch: "patches/1200.bin" },
+        "12.50": { bug: "poops", patch: "patches/1250.bin" },
+        "12.52": { bug: "poops", patch: "patches/1250.bin" },
+        "13.00": { bug: "poops", patch: "patches/1300.bin" }
+    };
+    var profile = key ? profiles[key] : null;
+    if (!key) {
         why = "user-agent is not a PlayStation 4";
-    } else if (fwnum <= 1202) {
-        bug = "lapse"; why = key + " <= 12.02";
-    } else if (fwnum >= 1250) {
-        bug = "poops"; why = key + " >= 12.50";
+    } else if (!profile) {
+        why = key + " -- no exact firmware profile; refusing to guess";
     } else {
-        why = key + " -- no working bug (lapse ends at 12.02, poops needs 12.50)";
+        bug = profile.bug;
+        why = key + " -- exact profile";
     }
     detEl.innerHTML = "firmware <b>" + (key || "unknown") + "</b>"
         + " &middot; bug <b>" + (bug || "none") + "</b> &middot; " + why;
@@ -68,8 +79,50 @@
 
     var target = (bug === "lapse" ? "run_lapse.html" : "run_poops.html")
         + location.search;
-    function go() { setState("loading " + bug + " chain...", "warn");
-                    location.replace(target); }
+    var started = false;
+    function go() {
+        if (started) return;
+        started = true;
+        setState("preflight passed — loading " + bug + " chain...", "warn");
+        location.replace(target);
+    }
+    function failPreflight(msg) {
+        started = true;
+        setState("PRE-FLIGHT STOPPED", "bad");
+        setCache(msg, false);
+    }
+    function checkLocal(path, cb) {
+        var x = new XMLHttpRequest();
+        x.open("GET", path, true);
+        x.onreadystatechange = function () {
+            if (x.readyState !== 4) return;
+            cb(x.status === 0 || (x.status >= 200 && x.status < 400));
+        };
+        try { x.send(null); } catch (e) { cb(false); }
+    }
+    function preflight(cb) {
+        if (!profile || !key) return cb(false, "No exact firmware profile");
+        // Verify that the local metadata and the exact patch asset exist before dispatch.
+        checkLocal("ps4_offsets.js", function (a) {
+            if (!a) return cb(false, "ps4_offsets.js unavailable in cache");
+            checkLocal(profile.patch, function (b) {
+                if (!b) return cb(false, profile.patch + " unavailable in cache");
+                checkLocal(bug === "lapse" ? "run_lapse.html" : "run_poops.html", function (c) {
+                    if (!c) return cb(false, "chain entry unavailable in cache");
+                    cb(true, "preflight passed");
+                });
+            });
+        });
+    }
+
+    function safeGo() {
+        if (started) return;
+        setState("checking local assets...", "warn");
+        preflight(function (ok, msg) {
+            if (ok) go();
+            else failPreflight(msg);
+        });
+    }
 
     function waitForTap(msg, action) {
         setState(msg, "warn");
@@ -84,13 +137,13 @@
 
     var ac = window.applicationCache;
     if (!ac || !document.documentElement.hasAttribute("manifest")) {
-        go();
+        safeGo();
     } else if (!navigator.onLine) {
         setCache("offline -- from cache", true);
         go();
     } else if (ac.status === ac.IDLE) {
         setCache("cached", true);
-        go();
+        safeGo();
     } else if (ac.status === ac.UPDATEREADY) {
         try { ac.swapCache(); } catch (e) {}
         setCache("update downloaded", true);
@@ -107,7 +160,7 @@
 
         ac.addEventListener("cached", function () {
             setCache("cached for offline use", true);
-            waitForTap("CACHED (first run) -- Tekan tombol Enter  X/O", go);
+            waitForTap("CACHED (first run) -- Tekan tombol Enter  X/O", safeGo);
         }, false);
         ac.addEventListener("updateready", function () {
             try { ac.swapCache(); } catch (e) {}
@@ -118,15 +171,15 @@
 
         ac.addEventListener("noupdate", function () {
             setCache("cached -- offline ready", true);
-            go();
+            safeGo();
         }, false);
         ac.addEventListener("error", function () {
             setCache("cache unavailable");
-            waitForTap("CACHE FAILED -- Tekan tombol Enter  X/O", go);
+            waitForTap("CACHE FAILED -- Tekan tombol Enter  X/O", safeGo);
         }, false);
         ac.addEventListener("obsolete", function () {
             setCache("cache obsolete");
-            waitForTap("CACHE OBSOLETE -- Tekan tombol Enter  X/O", go);
+            waitForTap("CACHE OBSOLETE -- Tekan tombol Enter  X/O", safeGo);
         }, false);
     }
 })();
